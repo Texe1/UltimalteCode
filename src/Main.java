@@ -1,3 +1,4 @@
+import layer1.Target;
 import layer1.Var;
 import layer1.VarTemplate;
 
@@ -24,12 +25,15 @@ public class Main {
                         }})
         });
 
-        VarTemplate memTemplate = new VarTemplate.PatternVar("m", "\\[<b>(r, null) {\\+ <i>(r, null){\\* <s>(n, r)}}\\]");
+        VarTemplate memTemplate = new VarTemplate.PatternVar("m", "\\[<b>(r) {\\+ <i>(r){\\* <s>(n)}}\\]");
         new VarTemplate.NumVar();
 
         VarTemplate template = new VarTemplate.PatternVar("mov r, r/m", pattern);
 
         Var v = template.parse("rax = [rcx + rax * 4565]");
-        System.out.println(v);
+        //System.out.println(v);
+
+        Target t = new Target("(n8){0}(n64){20 | <src[b][index]>}");
+        t.inject(v);
     }
 }
