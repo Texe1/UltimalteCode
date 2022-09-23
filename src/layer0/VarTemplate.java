@@ -1,4 +1,4 @@
-package layer1;
+package layer0;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ public abstract class VarTemplate {
 
         @Override
         public Var parse(String s) {
-            if(s.isEmpty())return new Var("null", new HashMap<>());
+            if(s.isEmpty())return new Var("null", "null", new HashMap<>());
             return null;
         }
     }
@@ -161,7 +161,7 @@ public abstract class VarTemplate {
                 }
             }
 
-            return new Var("pattern", vars);
+            return new Var(this.name, "pattern", vars);
         }
     }
 
@@ -203,7 +203,7 @@ public abstract class VarTemplate {
         @Override
         public Var parse(String s) {
             try {
-                return new Var("num", new HashMap<>() {{
+                return new Var("num", "num", new HashMap<>() {{
                     put("val", Integer.parseInt(s));
                 }});
             }catch (NumberFormatException e){

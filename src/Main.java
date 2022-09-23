@@ -1,39 +1,75 @@
-import layer1.Target;
-import layer1.Var;
-import layer1.VarTemplate;
+import layer1.Token;
 
-import java.util.HashMap;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        String code = "rax = rcx";
+    public static void main(String[] args) throws Exception {
 
-        String regs = "i, sz\nrax; 0, 64\nrcx; 1, 64\nrdx; 2, 64\nrbx; 3, 64\neax; 0, 32";
 
-        String pattern = "<dst>(r) \\= <src>(r, m)";
+        Scanner sc = new Scanner(new File("rsc/layer1/code.uc"));
 
-        VarTemplate.VarEnum registers = new VarTemplate.VarEnum("r", new Var[]{
-                new Var("rax",
-                        new HashMap<>(){{
-                            put("index", 0);
-                            put("size", 64);
-                        }}),
-                new Var("rcx",
-                        new HashMap<>(){{
-                            put("index", 1);
-                            put("size", 64);
-                        }})
-        });
+        String s = "";
+        while (sc.hasNextLine()){
+            s += "\n" + sc.nextLine();
+        }
 
-        VarTemplate memTemplate = new VarTemplate.PatternVar("m", "\\[<b>(r) {\\+ <i>(r){\\* <s>(n)}}\\]");
-        new VarTemplate.NumVar();
+        ArrayList<Token> tokens = new ArrayList<>();
 
-        VarTemplate template = new VarTemplate.PatternVar("mov r, r/m", pattern);
+        int i = 0;
 
-        Var v = template.parse("rax = [rcx + rax * 4565]");
-        //System.out.println(v);
+        int line = 0;
+        int column = -1;
 
-        Target t = new Target("(n8){0}(n64){20 | <src[b][index]>}");
-        t.inject(v);
+        while (i < s.length()) {
+            column++;
+            if(s.charAt(i) == '\n'){
+                line++;
+                column = 0;
+                i++;
+            }else if(s.charAt(i) == '/' && s.charAt(i+1) == '/'){
+                while(i < s.length() && s.charAt(i) != '\n'){
+                    i++;
+                }
+            }
+            Token.parseRet t = Token.parse(s.substring(i));
+            if(t != null && t.len() != 0){
+                i += t.len();
+                t.tok().setPos(line, column);
+                tokens.add(t.tok());
+                continue;
+            }
+
+            i++;
+        }
+
+        System.out.println("Tokens:");
+
+        line = tokens.get(0).getLine();
+
+        int nTabs = 0;
+
+        for (Token t : tokens) {
+            if(t.getVal().toString().equals("}"))
+                nTabs--;
+            if(t.getLine() > line) {
+                System.out.println();
+                for (int j = 0; j < nTabs; j++) {
+                    System.out.print("\t");
+                }
+                line = t.getLine();
+            }
+
+            System.out.print(t.getVal() + " ");
+            if(t.getVal().toString().equals("{"))
+                nTabs++;
+
+        }
+
+    }
+
+    public static void s(String s){
+        s = s.substring(1);
     }
 }
