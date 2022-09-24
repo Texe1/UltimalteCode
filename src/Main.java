@@ -7,7 +7,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
 
-        Scanner sc = new Scanner(new File("rsc/layer1/code.uc"));
+        Scanner sc = new Scanner(new File("rsc/layer1/code.ucode"));
 
         String s = "";
         while (sc.hasNextLine()){
