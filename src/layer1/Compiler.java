@@ -9,7 +9,7 @@ public class Compiler {
 
         int i = 0;
 
-        int line = 0;
+        int line = 1;
         int lineStart = 0;
 
 
@@ -18,6 +18,7 @@ public class Compiler {
             if(code.charAt(i) == '\n'){
                 line++;
                 lineStart = ++i;
+                continue;
             }else if(code.charAt(i) == '/' && code.charAt(i+1) == '/'){
                 while(i < code.length() && code.charAt(i) != '\n'){
                     i++;
@@ -25,7 +26,7 @@ public class Compiler {
             }
             Token.parseRet t = Token.parse(code.substring(i));
             if(t != null && t.len() != 0){
-                t.tok().setPos(line, i - lineStart);
+                t.tok().setPos(line, i - lineStart + 1);
                 i += t.len();
                 tokenArrayList.add(t.tok());
                 continue;
@@ -62,6 +63,8 @@ public class Compiler {
 
 
         // syntax checking
+        boolean infunc = false;
+
         for (i = 0; i < tokens.length; i++) {
             System.out.println(i);
             if(tokens[i].getVal().toString().equals("import")){ // imports
@@ -85,52 +88,53 @@ public class Compiler {
 
                 // import lines ('name(#)=>#' | 'name()=>#' | 'name(#)' | name())
                 while (j < tokens.length && !(tokens[j].isStatic && tokens[j].getVal().equals("}"))) {
-                    if(tokens[j].isStatic){
-                        System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                                "Function definition expected,\n\t\tfound '" + tokens[j].getVal() + "'");
-                        System.exit(0);
-                    }
-                    j++;
-                    if(!tokens[j].isStatic || !tokens[j].getVal().equals("(")){
-                        System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                                "expected '(',\n\t\tfound '" + tokens[j].getVal() + "'");
-                        System.exit(0);
-                    }
-                    j++;
-                    if(!tokens[j].isStatic){ // argument size defined
-                        if(!tokens[j].getVal().getClass().equals(Long.class)){
-                            System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                                    "expected ')' or argument size,\n\t\tfound '" + tokens[j].getVal() + "'");
-                            System.exit(0);
-                        }
-                    }
-                    j++;
-                    if(!tokens[j].getVal().equals(")")){
-                        System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                            "expected ')',\n\t\tfound '" + tokens[j].getVal() + "'");
-                        System.exit(0);
-                    }
-                    j++;
 
-                    if(tokens[j].isStatic){
-                        if(tokens[j].getVal().equals("}"))
-                            break;
-                        if(!tokens[j].getVal().equals("=>") || tokens[j+1].isStatic || !tokens[j+1].getVal().getClass().equals(Long.class)){
-                            System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                                    "expected return size declaration or new line (=> #),\n\t\tfound '" + tokens[j].getVal() + "'");
-                            System.exit(0);
-                        }
-                        j += 2;
-                    }
+                    j = checkFuncDef(tokens, j);
+
                     if(tokens[j].getLine() == tokens[j-1].getLine()){
                         System.err.println("Syntax error in Line " + tokens[j].getLine() + ", column " + tokens[j].getColumn() + ":\n\t" +
-                                "expected return size declaration or new line (=> #),\n\t\tfound '" + tokens[j].getVal() + "'");
+                                "expected new line,\n\t\tfound '" + tokens[j].getVal() + "'");
                         System.exit(0);
                     }
                 }
 
-                i = j;
+                i = j+1;
             }
+
+            // function definition
+            if(tokens[i].isStatic && tokens[i].getVal().equals("func")){
+                i++;
+                checkFuncDef(tokens, i);
+                infunc = true;
+            }
+
+            // var definitios
+            if(tokens[i].isStatic && (
+                    tokens[i].getVal().equals("byte")
+                        || tokens[i].getVal().equals("char")
+                        || tokens[i].getVal().equals("word")
+                        || tokens[i].getVal().equals("short")
+                        || tokens[i].getVal().equals("int")
+                        || tokens[i].getVal().equals("long")
+            )){
+                if(tokens[++i].isStatic){
+                    if(tokens[i].getVal().equals("arg"))
+                        i++;
+                    else {
+                        System.err.println("Syntax error in line " + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
+                                "expected variable name or 'arg' declaration, found '" + tokens[i].getVal() + "'");
+                        System.exit(0);
+                    }
+                }
+                if(tokens[i].isStatic || !tokens[i].getVal().getClass().equals(String.class)){
+                    System.err.println("Syntax error in line" + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
+                            "Expected variable name, found '" + tokens[i].getVal() + "'");
+                }
+                i++;
+            }
+
+
+
         }
 
         return s;
@@ -153,16 +157,40 @@ public class Compiler {
 
         // #
         if (!tokens[++i].isStatic){
-            if(tokens[i].getVal().getClass().equals(Long.class)){
+            if(!tokens[i].getVal().getClass().equals(Long.class)){
                 System.err.println("Syntax error in Line " + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
                         "expected argument size or ')', found, '" + tokens[i].getVal() + "'");
                 System.exit(0);
             }
         }
 
-        if(!tokens[++i].isStatic || !)
+        // )
+        if(!tokens[++i].isStatic || !tokens[i].getVal().equals(")")){
+            if(tokens[i].getVal().getClass().equals(Long.class)){
+                System.err.println("Syntax error in Line " + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
+                        "expected ')', found, '" + tokens[i].getVal() + "'");
+                System.exit(0);
+            }
+        }
 
-        return i;
+        // => #
+        if(tokens[i].getLine() == tokens[++i].getLine() && !(tokens[i].isStatic && tokens[i].getVal().equals("{"))){
+            if(!tokens[i].isStatic || !tokens[i].getVal().equals("=>")){
+                if(tokens[i].getVal().getClass().equals(Long.class)){
+                    System.err.println("Syntax error in Line " + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
+                            "expected '=>', found, '" + tokens[i].getVal() + "'");
+                    System.exit(0);
+                }
+            }
+            // #
+            if(tokens[++i].isStatic || !tokens[i].getVal().getClass().equals(Long.class)){
+                System.err.println("Syntax error in Line " + tokens[i].getLine() + ", column " + tokens[i].getColumn() + ":\n\t" +
+                        "expected return size, found, '" + tokens[i].getVal() + "'");
+                System.exit(0);
+            }
+        }
+
+        return ++i;
     }
 
 }
