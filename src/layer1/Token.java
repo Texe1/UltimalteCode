@@ -85,7 +85,7 @@ public class Token<T> {
     public static parseRet parse(String s) {
         for (String type : staticTypes) {
             if(s.startsWith(type)){
-                return new parseRet(new Token<String>(type), type.length());
+                return new parseRet(new Token<String>(type, true), type.length());
             }
         }
 
