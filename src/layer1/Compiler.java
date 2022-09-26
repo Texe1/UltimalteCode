@@ -62,7 +62,7 @@ public class Compiler {
         }
 
 
-        // syntax checking
+        // simple syntax checking
         boolean infunc = false;
 
         for (i = 0; i < tokens.length; i++) {
@@ -137,6 +137,14 @@ public class Compiler {
 
         }
 
+
+        // parsing
+        ArrayList<Node> parseStack = new ArrayList<>();
+
+        for (Token t : tokens) {
+            parseStack.add(new Node(t));
+        }
+
         return s;
     }
 
@@ -191,6 +199,14 @@ public class Compiler {
         }
 
         return ++i;
+    }
+
+    public static void parseImports(ArrayList<Node> parseStack){
+        for (int i = 0; i < parseStack.size(); i++) {
+            if(parseStack.get(i).t.getVal().equals("import")){
+                if(parseStack.get(++i).)
+            }
+        }
     }
 
 }
